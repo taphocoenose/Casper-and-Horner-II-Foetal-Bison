@@ -4,7 +4,7 @@
 #
 # Built in R Version 3.5.1 - "Feather Spray"
 # 
-# Last updated on November 27, 2018.
+# Last updated on August 28, 2019.
 # Tested on an Asus Zenbook Flip with Windows 10.
 # 
 # Report issues or make suggestions: rbreslawski@smu.edu
@@ -1935,15 +1935,15 @@ main.function <- function(){
 	                               min=rep(0,4), max=rep(0,4), stringsAsFactors=FALSE)
 	
   # Obtain min and max depth values based on the simulated lengths and quantile
-	# regression coefficients (99.73% intervals).
+	# regression coefficients (95% intervals).
 	for(z in simulated.limits$element){
 	  place <- which(simulated.limits[,1]==z)
-	  b <- cfs[which(cfs[,1]==z & cfs[,2]=="99.865%"),3]
-	  i <- cfs[which(cfs[,1]==z & cfs[,2]=="99.865%"),4]
-	  simulated.limits[place,2] <- (sim.metric[1,(place*2-1)]/b)^(1/i)
-	  b <- cfs[which(cfs[,1]==z & cfs[,2]=="0.135%"),3]
-	  i <- cfs[which(cfs[,1]==z & cfs[,2]=="0.135%"),4]
-	  simulated.limits[place,3] <- (sim.metric[320,(place*2)]/b)^(1/i)
+	  a <- cfs[which(cfs[,1]==z & cfs[,2]=="97.5%"),3]
+	  b <- cfs[which(cfs[,1]==z & cfs[,2]=="97.5%"),4]
+	  simulated.limits[place,2] <- exp((log(sim.metric[1,(place*2-1)])-a)/b)
+	  a <- cfs[which(cfs[,1]==z & cfs[,2]=="2.5%"),3]
+	  b <- cfs[which(cfs[,1]==z & cfs[,2]=="2.5%"),4]
+	  simulated.limits[place,3] <- exp((log(sim.metric[320,(place*2)])-a)/b)
 	}
 	
 	# Prompt user to enter metric values and store them in a data frame.
@@ -1989,8 +1989,8 @@ main.function <- function(){
 	  # Create min and max values for the user-entered depths
 	  # based on the measurement error and the regression
 	  # estimates of length based on depth.
-	  metric.min <- coeffs[1,3]*((element.df[x,2]-0.225)^coeffs[1,4])
-	  metric.max <- coeffs[2,3]*((element.df[x,2]+0.225)^coeffs[2,4])
+	  metric.min <- exp(coeffs[1,3] + coeffs[1,4]*log((element.df[x,2]-0.225)))
+	  metric.max <- exp(coeffs[2,3] + coeffs[2,4]*log((element.df[x,2]+0.225)))
 	  
 	  # Find position of simulated value within the tolerances,
 	  # and return the corresponding day value. Store these days
@@ -2598,8 +2598,8 @@ est.function <- function(){
       tibia.growth <- ggplot() +
         geom_ribbon(data=plotinfo, aes(x=days, ymin=tmaxmin, 
                   ymax=tmaxmax), alpha=0.2)+
-        geom_point(data=plotinfo, aes(x=days, y=old.tib.max),
-                  color="grey66", size=0.4, shape=20)+
+        geom_line(data=plotinfo, aes(x=days, y=old.tib.max),
+                  size=0.5, linetype="dotted")+
         geom_point(data=min.max.df, aes(x=days, y=Tib.Min), 
                    size=0.4, shape=20)+
         geom_point(data=min.max.df, aes(x=days, y=Tib.Max), 
@@ -2618,8 +2618,8 @@ est.function <- function(){
       femur.growth <- ggplot() +
         geom_ribbon(data=plotinfo, aes(x=days, ymin=fmaxmin, 
                       ymax=fmaxmax), alpha=0.2)+
-        geom_point(data=plotinfo, aes(x=days, y=old.fem.max),
-                   color="grey66", size=0.4, shape=20)+
+        geom_line(data=plotinfo, aes(x=days, y=old.fem.max),
+                   size=0.5, linetype="dotted")+
         geom_point(data=min.max.df, aes(x=days, y=Fem.Min), 
                    size=0.4, shape=20)+
         geom_point(data=min.max.df, aes(x=days, y=Fem.Max), 
@@ -2638,8 +2638,8 @@ est.function <- function(){
       radius.growth <- ggplot() +
         geom_ribbon(data=plotinfo, aes(x=days, ymin=rmaxmin, 
                         ymax=rmaxmax), alpha=0.2)+
-        geom_point(data=plotinfo, aes(x=days, y=old.rad.max),
-                   color="grey66", size=0.4, shape=20)+
+        geom_line(data=plotinfo, aes(x=days, y=old.rad.max),
+                   size=0.5, linetype="dotted")+
         geom_point(data=min.max.df, aes(x=days, y=Rad.Min), 
                    size=0.4, shape=20)+
         geom_point(data=min.max.df, aes(x=days, y=Rad.Max), 
@@ -2658,8 +2658,8 @@ est.function <- function(){
       humerus.growth <- ggplot() +
         geom_ribbon(data=plotinfo, aes(x=days, ymin=hmaxmin, 
                         ymax=hmaxmax), alpha=0.2)+
-        geom_point(data=plotinfo, aes(x=days, y=old.hum.max),
-                   color="grey66", size=0.4, shape=20)+
+        geom_line(data=plotinfo, aes(x=days, y=old.hum.max),
+                  size=0.5, linetype="dotted")+
         geom_point(data=min.max.df, aes(x=days, y=Hum.Min), 
                    size=0.4, shape=20)+
         geom_point(data=min.max.df, aes(x=days, y=Hum.Max), 
@@ -2765,14 +2765,9 @@ metric.function <- function(){
   # and minimum antero-posterior depth. Create a subset of this
   # data that excludes 8232B, a bison fetus with outlying metric
   # values.
-  master <- data.frame(Provenience=c("Uppert Tucker Site", "Uppert Tucker Site", "Uppert Tucker Site", "Uppert Tucker Site", "Uppert Tucker Site", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Baker Cave III", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "Roberts Ranch", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "Big Goose Creek", "Big Goose Creek", "Big Goose Creek", "Big Goose Creek", "Big Goose Creek", "Big Goose Creek", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Wyoming Archaeological Repository", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "University of Saskatchewan", "Yellowstone National Park", "Yellowstone National Park", "Yellowstone National Park"),
-                       ID=c("1", "2", "3", "31", "77", "287", "492", "499", "705", "1011", "1568", "1995", "2345", "2542", "3721", "3859", "4493", "5277", "5317", "5446", "5494", "5546", "5684", "5685", "7097.1", "7098.1", "7100.4", "7101.1", "7103.1", "7103.11", "7103.14", "7105.1", "7106.1", "7112.1", "7114.1", "7114.2", "7116.3", "7123.4", "7126.3", "7126.6", "7127.11", "7127.2", "7127.3", "7132.1", "7095.1REV", "8206Ba", "8206Ba", "8206Ba", "8206Ba", "8206Ba", "8206Ba", "8206Ba", "8206Ba", "8206Bb", "8206Bb", "8206Bb", "8206Bb", "8206Bb", "8206Bb", "8206Bb", "8206Bb", "8213B", "8213B", "8213B", "8213B", "8213B", "8213B", "8213B", "8213B", "8219B", "8219B", "8219B", "8219B", "8219B", "8219B", "8219B", "8219B", "8221B", "8221B", "8221B", "8221B", "8221B", "8221B", "8221B", "8221B", "8229B", "8229B", "8229B", "8229B", "8229B", "8229B", "8229B", "8229B", "8232B", "8232B", "8232B", "8232B", "8232B", "8232B", "8232B", "8232B", "8234B", "8234B", "8234B", "8234B", "8234B", "8234B", "8234B", "8234B", "8235B", "8235B", "8235B", "8235B", "8235B", "8235B", "8235B", "8235B", "8236B", "8236B", "8236B", "8236B", "8236B", "8236B", "8236B", "8236B", "8238B", "8238B", "8238B", "8238B", "8238B", "8238B", "8238B", "8238B", "8284B", "8284B", "8284B", "8284B", "8284B", "8284B", "8284B", "8284B", "8285B", "8285B", "8285B", "8285B", "8285B", "8285B", "8285B", "8285B", "8286B", "8286B", "8286B", "8286B", "8286B", "8286B", "8286B", "8286B", "8287B", "8287B", "8287B", "8287B", "8287B", "8287B", "8287B", "8287B", "8288B", "8288B", "8288B", "8288B", "8288B", "8288B", "8288B", "8288B", "8289B", "8289B", "8289B", "8289B", "8289B", "8289B", "8289B", "8289B", "A329", "A337", "A338", "A343", "A346", "A347", "B0351", "B0351", "B0351", "B0351", "B0380", "B0380", "B0380", "B0380", "B0380", "B0380", "B0380", "B0380", "B212B", "B212B", "B212B", "B212B", "B212B", "US01L", "US01L", "US01L", "US01L", "US01R", "US01R", "US01R", "US01R", "US02L", "US02L", "US02L", "US02L", "US02R", "US02R", "US02R", "US02R", "US03L", "US03L", "US03L", "US03L", "US03R", "US03R", "US03R", "US03R", "US04L", "US04L", "US04L", "US04L", "US04R", "US04R", "US04R", "US04R", "f1", "t1", "t2"),
-                       element=c("radius", "tibia", "humerus", "humerus", "tibia", "radius", "humerus", "radius", "radius", "radius", "tibia", "radius", "femur", "tibia", "tibia", "tibia", "tibia", "femur", "femur", "radius", "humerus", "radius", "tibia", "radius", "humerus", "femur", "femur", "radius", "tibia", "tibia", "humerus", "tibia", "femur", "radius", "radius", "radius", "femur", "humerus", "radius", "femur", "radius", "tibia", "radius", "tibia", "radius", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "humerus", "radius", "radius", "humerus", "femur", "femur", "tibia", "tibia", "humerus", "humerus", "radius", "radius", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "humerus", "radius", "humerus", "radius", "femur", "femur", "tibia", "tibia", "radius", "humerus", "radius", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "radius", "radius", "humerus", "humerus", "femur", "femur", "tibia", "tibia", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "radius", "humerus", "tibia", "tibia", "humerus", "humerus", "radius", "radius", "femur", "femur", "tibia", "tibia", "radius", "humerus", "femur", "femur", "tibia", "femur", "humerus", "radius", "tibia", "humerus", "femur", "radius", "tibia", "humerus", "femur", "radius", "tibia", "femur", "humerus", "radius", "tibia", "humerus", "radius", "femur", "tibia", "humerus", "radius", "femur", "tibia", "humerus", "radius", "femur", "tibia", "humerus", "radius", "femur", "tibia", "femur", "tibia", "tibia"),
-                       length=c(129.22, 172.64, 138.06, 129.43, 160.52, 61.3, 92, 72, 38.4, 56.7, 34.3, 80.6, 44, 69.2, 86, 67.1, 57.9, 63.8, 37.2, 35.5, 90.4, 62.1, 43.3, 36.1, 54.32, 55.45, 47.45, 60, 72.45, 33.16, 25.76, 64.28, 60.81, 43.14, 60.25, 62.87, 62.1, 31.19, 59.18, 50.13, 50.66, 70.48, 41.73, 75.28, 62.66, 140.15, 141.57, 148.1, 151, 159.35, 159.62, 178, 180, 122.17, 122.77, 130.61, 130.96, 147.03, 147.72, 161, 163, 130.15, 130.17, 130.25, 131.19, 152, 153, 170, 172, 88.7, 88.92, 90.13, 90.3, 102.96, 103.66, 116.05, 116.95, 107.75, 107.94, 110.28, 111.11, 124.06, 125.3, 138.77, 139.01, 116.53, 117.55, 120.65, 120.8, 137.04, 138, 149.34, 151, 117.65, 118.42, 119.47, 120.11, 136.21, 136.64, 144.2, 145.41, 139.11, 139.61, 144.63, 144.98, 158, 159, 170, 171, 132.79, 134.1, 134.29, 134.37, 155, 155, 157, 163, 132.23, 132.33, 132.53, 132.97, 154, 155, 165, 167, 113.36, 113.37, 113.85, 114.67, 127.94, 128.57, 141.26, 142.13, 122.53, 123.19, 127.13, 128.66, 144.58, 146.74, 165, 165, 114.21, 115.69, 119.1, 119.38, 132.68, 134.77, 147.88, 149.33, 112.02, 113.49, 114.54, 115.48, 132.11, 133.76, 147.25, 147.37, 113.24, 114.1, 115.03, 115.51, 130.01, 130.05, 146.78, 147.43, 118.79, 119.33, 123.05, 123.08, 140.29, 140.63, 151, 153, 118.11, 118.4, 118.93, 119.96, 136.77, 137.63, 153, 156, 36.5, 102, 26.1, 49.5, 47, 41.6, 131.07, 133.9, 167, 169, 88.56, 88.78, 89.54, 89.79, 103.07, 103.99, 115.34, 116.5, 132.49, 133.67, 153, 155, 169, 6.59, 6.74, 6.92, 7.67, 6.27, 6.55, 6.91, 7.73, 6.63, 7.01, 7.48, 8.07, 6.4, 6.78, 7.16, 7.79, 62.23, 65.46, 75.01, 81.75, 61.87, 64.48, 73.9, 82.54, 85.54, 91.64, 105.56, 111.99, 86.56, 90.29, 107.33, 112.56, 91.16, 106.04, 102.61),
-                       depth=c(14.61, 18.71, 25.19, 21.19, 16.99, 7.7, 17.1, 9.1, 4.7, 6.8, 4.4, 9.7, 7.1, 8.5, 11.8, 8.9, 8, 9.9, 6.6, 4.1, 16.8, 8.2, 4.9, 4.2, 10.49, 10.01, 7.11, 7.47, 10.86, 4.92, 6.06, 7.91, 10.14, 5.73, 8.22, 7.4, 11.34, 6.51, 7.17, 8.65, 7.25, 10.04, 5.59, 10.21, 8.11, 15.73, 17.03, 23.26, 23.95, 21.93, 21.66, 20.34, 20, 14.86, 15.53, 20.31, 20.08, 20.33, 20.12, 18.26, 18.14, 19.92, 13.66, 13.83, 20.04, 19.98, 19.18, 17.96, 17.97, 14.23, 14.59, 10.97, 10.9, 15.32, 15.4, 14.04, 13.99, 13.27, 13.23, 17.34, 17.39, 16.6, 17.12, 15.54, 15.37, 13.09, 13.06, 17.88, 18.5, 18.87, 18.74, 17.61, 17.49, 11.15, 11.2, 15.94, 16.18, 16.61, 16.42, 13.68, 13.37, 16.34, 16.48, 24.25, 22.88, 23.07, 22.72, 19.06, 19.22, 19.84, 14.1, 20.25, 14.63, 19.4, 20.41, 17.2, 17.4, 16.35, 21, 16.35, 21.06, 21.49, 21.13, 19.07, 19.03, 11.84, 11.74, 17.23, 17.37, 17.73, 17.15, 15.64, 15.41, 13.05, 13.16, 19.13, 19.18, 19.2, 18.98, 16.73, 16.88, 14.18, 13.97, 17.96, 18.07, 18.94, 19.36, 17.58, 17.39, 12.98, 13.32, 16.79, 16.61, 18.23, 18.35, 16.44, 16.43, 12.74, 13.04, 17.64, 17.79, 17.86, 17.92, 16.54, 16.15, 13.62, 13.78, 17.87, 17.41, 18.23, 18.11, 16.8, 16.95, 15.24, 15.25, 19.75, 19.91, 19.56, 19.51, 17.64, 17.7, 7.9, 18.4, 5.7, 12.25, 11, 9, 15.06, 21.47, 18.03, 17.46, 13.82, 13.34, 9.84, 9.91, 14.37, 14.09, 12.92, 12.78, 15.71, 20.67, 21.3, 20.79, 19.4, 1.44, 1.41, 0.9, 1.24, 1.51, 1.49, 0.9, 1.23, 1.46, 1.31, 0.91, 1.33, 1.44, 1.57, 0.93, 1.39, 11.43, 8.54, 12.47, 13.52, 12.25, 8.23, 12.22, 12.23, 16.63, 12.61, 16.39, 15.66, 17.39, 12.14, 17.29, 15.69, 14.39, 13.62, 12.96),
-                       source=c("Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Johnston, 2016", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Frison et al., 1978", "Frison et al., 1978", "Frison et al., 1978", "Frison et al., 1978", "Frison et al., 1978", "Frison et al., 1978", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Playford, 2015", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017", "Breslawski & Playford, 2017"))
-  master1 <- subset(master, ID != "8232B")
-  master2 <- master[which(master$ID=="8232B"),]
+  master1 <- read.csv("metrics.csv", header=TRUE, stringsAsFactors=FALSE)
+  master1$llength <- log(master1$length)
+  master1$ldepth <- log(master1$depth)
   
   # Parition metric data into element specific data frames.
   humerus <- master1[master1$element=="humerus",]
@@ -2784,28 +2779,29 @@ metric.function <- function(){
   # relationships.
   models <- c("humerus", "humerus", "radius", "radius",
               "tibia", "tibia", "femur", "femur")
-  taus <- rep(c("0.135%","99.865%"),4)
-  modelspar <- data.frame(models=models, tau=taus, b=rep(0,8), i=rep(0,8),
-                          stringsAsFactors=FALSE)
+  taus <- rep(c("2.5%","97.5%"),4)
+  modelspar <- data.frame(models=models, tau=taus, a=rep(0,8), 
+                          b=rep(0,8), stringsAsFactors=FALSE)
   
   # Define generic function for the relationship between diaphysis
   # depth and length.
-  func <- length ~ b*(depth^i)
+  func <- llength ~ a + b*ldepth
   
   # Paramaterize function for each element. This function is used to
-  # estimate mean, 2.5%, and 97.5% quantile relationships.
-  hdl <- nlrq(func, data=humerus, tau=0.00135,start=list(b=3, i=1.5))
-  hdm <- nlrq(func, data=humerus, tau=0.5,start=list(b=3, i=1.5))
-  hdu <- nlrq(func, data=humerus, tau=0.99865,start=list(b=3, i=1.5))
-  rdl <- nlrq(func, data=radius, tau=0.0135,start=list(b=3, i=1.5))
-  rdm <- nlrq(func, data=radius, tau=0.5,start=list(b=3, i=1.5))
-  rdu <- nlrq(func, data=radius, tau=0.99865,start=list(b=3, i=1.5))
-  tdl <- nlrq(func, data=tibia, tau=0.00135,start=list(b=3, i=1.5))
-  tdm <- nlrq(func, data=tibia, tau=0.5,start=list(b=3, i=1.5))
-  tdu <- nlrq(func, data=tibia, tau=0.99865,start=list(b=3, i=1.5))
-  fdl <- nlrq(func, data=femur, tau=0.00135,start=list(b=3, i=1.5))
-  fdm <- nlrq(func, data=femur, tau=0.5,start=list(b=3, i=1.5))
-  fdu <- nlrq(func, data=femur, tau=0.99865,start=list(b=3, i=1.5))
+  # estimate 2.5%, 50%, and 97.5% quantile relationships.
+  sl <- list(a=0, b=1)
+  hdl <- nlrq(func, data=humerus, tau=0.025,start=sl)
+  hdm <- nlrq(func, data=humerus, tau=0.5,start=sl)
+  hdu <- nlrq(func, data=humerus, tau=0.975,start=sl)
+  rdl <- nlrq(func, data=radius, tau=0.025,start=sl)
+  rdm <- nlrq(func, data=radius, tau=0.5,start=sl)
+  rdu <- nlrq(func, data=radius, tau=0.975,start=sl)
+  tdl <- nlrq(func, data=tibia, tau=0.025,start=sl)
+  tdm <- nlrq(func, data=tibia, tau=0.5,start=sl)
+  tdu <- nlrq(func, data=tibia, tau=0.975,start=sl)
+  fdl <- nlrq(func, data=femur, tau=0.025,start=sl)
+  fdm <- nlrq(func, data=femur, tau=0.5,start=sl)
+  fdu <- nlrq(func, data=femur, tau=0.975,start=sl)
   
   # Store model parameters in modelspar data frame.
   modelspar[1,3:4] <- coef(hdl)
@@ -2828,76 +2824,98 @@ metric.function <- function(){
     
     # Store quantile regressions as functions for plotting with
     # the stat_function() ggplot2 argument.
-    phl <- function(x) coef(hdl)[1]*(x^coef(hdl)[2])
-    phm <- function(x) coef(hdm)[1]*(x^coef(hdm)[2])
-    phu <- function(x) coef(hdu)[1]*(x^coef(hdu)[2])
-    prl <- function(x) coef(rdl)[1]*(x^coef(rdl)[2])
-    prm <- function(x) coef(rdm)[1]*(x^coef(rdm)[2])
-    pru <- function(x) coef(rdu)[1]*(x^coef(rdu)[2])
-    ptl <- function(x) coef(tdl)[1]*(x^coef(tdl)[2])
-    ptm <- function(x) coef(tdm)[1]*(x^coef(tdm)[2])
-    ptu <- function(x) coef(tdu)[1]*(x^coef(tdu)[2])
-    pfl <- function(x) coef(fdl)[1]*(x^coef(fdl)[2])
-    pfm <- function(x) coef(fdm)[1]*(x^coef(fdm)[2])
-    pfu <- function(x) coef(fdu)[1]*(x^coef(fdu)[2])
+    phl <- function(x) coef(hdl)[1] + coef(hdl)[2]*x
+    phm <- function(x) coef(hdm)[1] + coef(hdm)[2]*x
+    phu <- function(x) coef(hdu)[1] + coef(hdu)[2]*x
+    prl <- function(x) coef(rdl)[1] + coef(rdl)[2]*x
+    prm <- function(x) coef(rdm)[1] + coef(rdm)[2]*x
+    pru <- function(x) coef(rdu)[1] + coef(rdu)[2]*x
+    ptl <- function(x) coef(tdl)[1] + coef(tdl)[2]*x
+    ptm <- function(x) coef(tdm)[1] + coef(tdm)[2]*x
+    ptu <- function(x) coef(tdu)[1] + coef(tdu)[2]*x
+    pfl <- function(x) coef(fdl)[1] + coef(fdl)[2]*x
+    pfm <- function(x) coef(fdm)[1] + coef(fdm)[2]*x
+    pfu <- function(x) coef(fdu)[1] + coef(fdu)[2]*x
+    
+    phldf <- data.frame(x=exp(seq(log(0.1), max(humerus$ldepth), length.out=50)),
+                        y=exp(phl(seq(log(0.1), max(humerus$ldepth), length.out=50))))
+    phmdf <- data.frame(x=exp(seq(log(0.1), max(humerus$ldepth), length.out=50)),
+                        y=exp(phm(seq(log(0.1), max(humerus$ldepth), length.out=50))))
+    phudf <- data.frame(x=exp(seq(log(0.1), max(humerus$ldepth), length.out=50)),
+                        y=exp(phu(seq(log(0.1), max(humerus$ldepth), length.out=50))))
+    
+    prldf <- data.frame(x=exp(seq(log(0.1), max(radius$ldepth), length.out=50)),
+                        y=exp(prl(seq(log(0.1), max(radius$ldepth), length.out=50))))
+    prmdf <- data.frame(x=exp(seq(log(0.1), max(radius$ldepth), length.out=50)),
+                        y=exp(prm(seq(log(0.1), max(radius$ldepth), length.out=50))))
+    prudf <- data.frame(x=exp(seq(log(0.1), max(radius$ldepth), length.out=50)),
+                        y=exp(pru(seq(log(0.1), max(radius$ldepth), length.out=50))))
+    
+    ptldf <- data.frame(x=exp(seq(log(0.1), max(tibia$ldepth), length.out=50)),
+                        y=exp(ptl(seq(log(0.1), max(tibia$ldepth), length.out=50))))
+    ptmdf <- data.frame(x=exp(seq(log(0.1), max(tibia$ldepth), length.out=50)),
+                        y=exp(ptm(seq(log(0.1), max(tibia$ldepth), length.out=50))))
+    ptudf <- data.frame(x=exp(seq(log(0.1), max(tibia$ldepth), length.out=50)),
+                        y=exp(ptu(seq(log(0.1), max(tibia$ldepth), length.out=50))))
+    
+    pfldf <- data.frame(x=exp(seq(log(0.1), max(femur$ldepth), length.out=50)),
+                        y=exp(pfl(seq(log(0.1), max(femur$ldepth), length.out=50))))
+    pfmdf <- data.frame(x=exp(seq(log(0.1), max(femur$ldepth), length.out=50)),
+                        y=exp(pfm(seq(log(0.1), max(femur$ldepth), length.out=50))))
+    pfudf <- data.frame(x=exp(seq(log(0.1), max(femur$ldepth), length.out=50)),
+                        y=exp(pfu(seq(log(0.1), max(femur$ldepth), length.out=50))))
     
     # Create humerus metrics plot.
     humd <- ggplot(data=humerus, aes(depth, length)) + geom_point() +
-      stat_function(fun=phl, alpha=0.2, size=1) + 
-      stat_function(fun=phu, alpha=0.2, size=1) +
-      stat_function(fun=phm, alpha=0.2, size=1, linetype="dashed") +
-      geom_point(data=master2[which(master2$element=="humerus"),], shape = 21,
-                 aes(x=depth, y=length), fill=NA, color="black", stroke=1)+
-      xlim(0, max(humerus$depth)) + ylim(0, phu(max(humerus$depth)))+
+      geom_line(data=phudf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=phldf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=phmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
+      xlim(0, max(humerus$depth)) + 
+      ylim(0, exp(phu(max(humerus$ldepth))))+
       annotate("text", label="humerus", x=0.1*max(humerus$depth), 
-               y=0.9*phu(max(humerus$depth)), size=5)+
+               y=0.9*exp(phu(max(humerus$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create radius metrics plot.
     radd <- ggplot(data=radius, aes(depth, length)) + geom_point() +
-      stat_function(fun=prl, alpha=0.2, size=1) + 
-      stat_function(fun=pru, alpha=0.2, size=1) +
-      stat_function(fun=prm, alpha=0.2, size=1, linetype="dashed") +
-      geom_point(data=master2[which(master2$element=="radius"),], shape = 21,
-                 aes(x=depth, y=length), fill=NA, color="black", stroke=1)+
-      xlim(0, max(radius$depth)) + ylim(0, pru(max(radius$depth)))+
+      geom_line(data=prudf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=prldf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=prmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
+      xlim(0, max(radius$depth)) + 
+      ylim(0, exp(pru(max(radius$ldepth))))+
       annotate("text", label="radius", x=0.1*max(radius$depth), 
-               y=0.9*pru(max(radius$depth)), size=5)+
+               y=0.9*exp(pru(max(radius$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # create femur metrics plot.
     femd <- ggplot(data=femur, aes(depth, length)) + geom_point() +
-      stat_function(fun=pfl, alpha=0.2, size=1) + 
-      stat_function(fun=pfu, alpha=0.2, size=1) +
-      stat_function(fun=pfm, alpha=0.2, size=1, linetype="dashed") +
-      geom_point(data=master2[which(master2$element=="femur"),], shape = 21,
-                 aes(x=depth, y=length), fill=NA, color="black", stroke=1)+
-      xlim(0, max(femur$depth)) + ylim(0, pfu(max(femur$depth)))+
+      geom_line(data=pfudf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=pfldf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=pfmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
+      xlim(0, max(femur$depth)) + 
+      ylim(0, exp(pfu(max(femur$ldepth))))+
       annotate("text", label="femur", x=0.1*max(femur$depth), 
-               y=0.9*pfu(max(femur$depth)), size=5)+
+               y=0.9*exp(phu(max(femur$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create tibia metrics plot.
     tibd <- ggplot(data=tibia, aes(depth, length)) + geom_point() +
-      stat_function(fun=ptl, alpha=0.2, size=1) + 
-      stat_function(fun=ptu, alpha=0.2, size=1) +
-      stat_function(fun=ptm, alpha=0.2, size=1, linetype="dashed") +
-      geom_point(data=master2[which(master2$element=="tibia"),], shape = 21,
-                 aes(x=depth, y=length), fill=NA, color="black", stroke=1)+
-      xlim(0, max(tibia$depth)) + ylim(0, ptu(max(tibia$depth)))+
+      geom_line(data=ptudf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=ptldf, aes(x=x, y=y), alpha=0.2, size=1) +
+      geom_line(data=ptmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
+      xlim(0, max(tibia$depth)*1.01) + 
+      ylim(0, exp(ptu(max(tibia$ldepth)))*1.01)+
       annotate("text", label="tibia", x=0.1*max(tibia$depth), 
-               y=0.9*ptu(max(tibia$depth)), size=5)+
+               y=0.9*exp(ptu(max(tibia$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Plot the element relationships in a 2x2 figure.
     grid.arrange(humd, radd, femd, tibd, ncol=2)
     
     # Present text describing the plots
-    cat("Empty points represent UWAR fetal skeleton 8232B, which was",
-        "\nexcluded from the quantile regressions. Solid grey lines show",
-        "\nthe 0.135% and 99.865% quantiles for the relationships. The dashed",
-        "\ngrey lines show mean relationships. All regressions take the",
-        "\nform of 'Length ~ b*Depth^i'.\n\n")
+    cat("Solid grey lines show the 2.5% and 97.5% quantiles for the ",
+        "\nrelationships. The dashed grey lines show median relationships.",
+        "\nAll regressions take the form 'log(length) ~ a + b*log(depth)'.\n\n")
   }
   
   # Return data frame of regression coefficients.
@@ -2911,12 +2929,7 @@ metric.function <- function(){
 # and does not return any variables.
 bootratios <- function(){
   # Data frame of modern and antiquus bison metrics
-  tb <- data.frame(element=c("humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "femur", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "humerus", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "tibia", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius", "radius"),
-                   sex=c("male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "male", "male", "male", "male", "male", "female", "female", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "female", "male", "male", "male", "male", "female", "male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "male", "male", "male", "male", "male", "female", "male", "male", "female", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "unsexed", "male", "female", "female", "male", "male", "male", "male", "female", "male", "male", "male", "male", "male", "male", "female", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "male", "male", "male", "male", "male", "male", "male", "male", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female", "female"),
-                   form=c("modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "antiq", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern", "modern"),
-                   metric=c(341, 339, 340, 340, 327, 328, 335, 336, 300, 300, 291, 288, 287, 281, 281, 278, 301, 301, 281, 279, 294, 293, 287, 286, 279, 276, 283, 282, 297, 295, 299, 300, 286, 286, 343, 348, 365, 346, 362, 362, 348, 353, 365, 343, 307, 313, 291, 300, 302, 293, 308, 304, 314, 315, 309, 315, 300, 429, 427, 433, 430, 428, 427, 434, 433, 375, 375, 376, 376, 362, 361, 388, 388, 356, 357, 380, 376, 372, 373, 359, 358, 369, 371, 378, 375, 386, 387, 367, 367, 384, 385, 388, 438, 435, 441, 438, 435, 456, 411, 403, 412, 411, 414, 416, 399, 398, 421, 382, 380, 372, 370, 371, 370, 360, 360, 359, 357, 363, 389, 387, 347, 375, 373, 370, 351, 350, 364, 364, 371, 371, 382, 381, 375, 388, 421, 435, 421, 435, 443, 399, 370, 397, 389, 385, 386, 376, 371, 399, 317, 353, 307, 353, 360, 352, 363, 312, 356, 453, 437, 439, 439, 436, 445, 432, 395, 396, 461, 466, 382, 358, 355, 316, 374, 348, 325, 362, 382, 370, 343, 371, 337, 368, 347, 346, 346, 338, 335, 351, 324, 325, 345, 340, 353, 366, 332, 368, 375, 354, 359, 366, 360, 320, 368, 353, 346, 362, 362, 365, 355, 349, 343, 359, 339, 354, 350, 344, 361, 351, 320, 327, 304, 323, 329, 330, 333, 325, 311, 313, 305, 332, 319, 318, 312, 320, 327, 316, 322, 348, 348, 339, 339, 333, 334, 335, 313, 316, 304, 303, 293, 291, 300, 303, 323, 323, 294, 294, 306, 306, 302, 303, 291, 292, 298, 296, 307, 307, 311, 306, 306),
-                   source=c("Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Haspel and Frison 1987", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983", "Todd 1983"))
-  
+  tb <- read.csv("adultbison.csv", header=TRUE, stringsAsFactors=FALSE)
   # Initialize table to store element lenth ratio summary stats
   elements <- c("humerus", "radius", "femur", "tibia")
   ratio.stats <- data.frame(elements, rep(0,4), rep(0,4), rep(0,4))
@@ -2934,6 +2947,10 @@ bootratios <- function(){
   # the summary stats table.
   for (x in 1:length(elements)){
     etb <- tb[which(tb$element==elements[x]),]
+    
+    # Filter for most abundant element side
+    maxside <- names(sort(table(etb$side),decreasing=TRUE))[1]
+    etb <- etb[which(etb$side==maxside),]
     
     bmm <- boot(etb$metric[which(etb$sex=="male" & etb$form=="modern")],
                 statistic = function(x, index) mean(x[index]), R = 1E4)
@@ -2962,7 +2979,7 @@ cat("\n\n***********************************************************************
 cat("* Probabilistic Seasonality Models for Fetal Bison antiquus Osteometrics *\n")
 cat("**************************************************************************\n\n",
   "- Built in R version 3.5.1 -- 'Feather Spray'\n",
-  "- Last updated on November 27, 2018.\n",
+  "- Last updated on August 28, 2019.\n",
   "- Report bugs or make suggestions: rbreslawski@smu.edu\n",
   "- Required packages: ggplot2, gridExtra, reshape2, \n",
   "                     quantreg, boot, smoother\n",
