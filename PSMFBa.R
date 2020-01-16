@@ -2,15 +2,15 @@
 #  Probabilistic Seasonality Models Based on Fetal Bison antiquus Osteometrics #
 ################################################################################
 #
-# Built in R Version 3.5.1 - "Feather Spray"
+# Built in R Version 3.6.1 - "Action of the Toes"
 # 
-# Last updated on August 28, 2019.
-# Tested on an Asus Zenbook Flip with Windows 10.
+# Last updated on January 14, 2020.
+# Tested on a Dell Inspiron 13 7000 with Windows 10.
 # 
 # Report issues or make suggestions: rbreslawski@smu.edu
 #
 # Required libraries: ggplot2, gridExtra, reshape2, 
-#                     quantreg, boot, smoother
+#                     quantreg, boot
 #
 #   This script produces season of death estimates (SODEs) based on fetal bison
 # antiquus osteometrics. The osteometrics include minimum diaphyseal depths of
@@ -97,9 +97,42 @@
 library(ggplot2)
 library(gridExtra)
 library(reshape2)
-library(smoother)
 library(boot)
 library(quantreg)
+
+# FUNCTION: Smoothing function, simplified from smth function in
+# smoother package.
+smth2 <- function(x){
+  
+  w <- sapply(c(0:(21 - 1)), function(y){
+    n <- y - 10
+    k <- -0.5 * (2.5 * n/10.5)^2
+    return(exp(1)^k)
+  })
+  
+  sizeW <- length(w)
+  sizeD <- length(x)
+  w <- w/sum(w)
+  hkwL <- as.integer(sizeW/2)
+  hkwR <- sizeW - hkwL
+  
+  ret <- sapply(c(1:sizeD), function(i){
+    ix.d <- c((i - hkwL):(i + hkwR - 1))
+    ix.w <- which(ix.d %in% 1:sizeD)
+    ix.d <- ix.d[ix.w]
+    if(length(ix.w) != sizeW){
+      W.nm <- w[ix.w]/sum(w[ix.w])
+    }else{
+      W.nm <- w
+    }
+    D.nm <- x[ix.d]
+    return(as.numeric(D.nm %*% W.nm))
+  })
+  
+  ret[c(1:hkwL, (sizeD - hkwR + 1):sizeD)] <- NA
+  
+  return(ret)
+}
 
 # FUNCTION: This prompts the user to select a conception calendar.
 # It does not require arguments. The function returns a vector of
@@ -459,13 +492,13 @@ select.model <- function(){
   Agg.ft.prob <- ((Assorted.prob*2)+YNP.N.prob+YNP.W.prob)/4
   
   # Create smoothed calendars with a 3-week kernel.
-  Niob.smooth <- smth(Niob.prob, window=21, method="gaussian")
-  NBR.smooth <- smth(NBR.prob, window=21, method="gaussian")
-  Assort.smooth <- smth(Assorted.prob, window=21, method="gaussian")
-  YNP.smooth <- smth(YNP.sum.prob, window=21, method="gaussian")
-  YNP.N.smooth <- smth(YNP.N.prob, window=21, method="gaussian")
-  YNP.W.smooth <- smth(YNP.W.prob, window=21, method="gaussian")
-  AggF.smooth <- smth(Agg.ft.prob, window=21, method="gaussian")
+  Niob.smooth <- smth2(Niob.prob)
+  NBR.smooth <- smth2(NBR.prob)
+  Assort.smooth <- smth2(Assorted.prob)
+  YNP.smooth <- smth2(YNP.sum.prob)
+  YNP.N.smooth <- smth2(YNP.N.prob)
+  YNP.W.smooth <- smth2(YNP.W.prob)
+  AggF.smooth <- smth2(Agg.ft.prob)
   
   # The smoothing function generates NAs at the end of each vector
   # of smoothed values. Replace these NAs with 0s.
@@ -658,7 +691,7 @@ select.model <- function(){
 	           color="red", alpha=0.8, hjust=0, size=2.6)+
 	  annotate("text", x=105, y=0.022, label="(sample data)[9]", 
 	           color="red", alpha=0.8, hjust=0, size=2.6)+
-	  xlab("Day-of-year")+ylab("p(conception)")+
+	  xlab("Day-of-year")+ylab("Probability of conception")+
 	  theme(axis.line.x = element_line(colour = "grey"),
 	        axis.line.y = element_line(colour = "grey"),
 	        panel.grid.major = element_blank(),
@@ -696,7 +729,7 @@ select.model <- function(){
 	        axis.title.y=element_blank())+
 	  scale_x_continuous(breaks=c(30,92,153,214), expand=c(0.01,0),
 	                     labels=c(181,243,304,365), limits=c(0,245))+
-	  scale_y_continuous(expand=c(0.02,0))
+	  scale_y_continuous(expand=c(0.02,0), breaks=seq(from=0, to=0.09, by=0.03))
 	
 	# Plot of National Bison Range copulations data.
 	Nbr.plot <- ggplot()+
@@ -747,7 +780,7 @@ select.model <- function(){
 	           color="red", alpha=0.8, hjust=0, size=2.6)+
 	  annotate("text", x=90, y=0.024, label="(sample data)[1]", 
 	           color="red", alpha=0.8, hjust=0, size=2.6)+
-	  xlab("")+ylab("p(conception)")+
+	  xlab("")+ylab("Probability of conception")+
 	  theme(axis.line.x = element_line(colour = "grey"),
 	        axis.line.y = element_line(colour = "grey"),
 	        panel.grid.major = element_blank(),
@@ -2766,8 +2799,8 @@ metric.function <- function(){
   # data that excludes 8232B, a bison fetus with outlying metric
   # values.
   master1 <- read.csv("metrics.csv", header=TRUE, stringsAsFactors=FALSE)
-  master1$llength <- log(master1$length)
-  master1$ldepth <- log(master1$depth)
+  master1$llength <- log(master1$length_value)
+  master1$ldepth <- log(master1$depth_value)
   
   # Parition metric data into element specific data frames.
   humerus <- master1[master1$element=="humerus",]
@@ -2812,6 +2845,12 @@ metric.function <- function(){
   modelspar[6,3:4] <- coef(tdu)
   modelspar[7,3:4] <- coef(fdl)
   modelspar[8,3:4] <- coef(fdu)
+  
+  # This code exports regression coefficient estimates. Currently
+  # commented out
+  #  coefs <- list(hdl, hdm, hdu, rdl, rdm, rdu, tdl, tdm, 
+  #  tdu, fdl, fdm, fdu)
+  #  save(coefs, file="qunatile_reg_coef.RData")
   
   # Present user with the option to plot the length-depth relationships.
   cat("Would you like to plot the relationships between diaphysis length",
@@ -2866,46 +2905,46 @@ metric.function <- function(){
                         y=exp(pfu(seq(log(0.1), max(femur$ldepth), length.out=50))))
     
     # Create humerus metrics plot.
-    humd <- ggplot(data=humerus, aes(depth, length)) + geom_point() +
+    humd <- ggplot(data=humerus, aes(depth_value, length_value)) + geom_point() +
       geom_line(data=phudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=phldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=phmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(humerus$depth)) + 
+      xlim(0, max(humerus$depth_value)) + 
       ylim(0, exp(phu(max(humerus$ldepth))))+
-      annotate("text", label="humerus", x=0.1*max(humerus$depth), 
+      annotate("text", label="humerus", x=0.1*max(humerus$depth_value), 
                y=0.9*exp(phu(max(humerus$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create radius metrics plot.
-    radd <- ggplot(data=radius, aes(depth, length)) + geom_point() +
+    radd <- ggplot(data=radius, aes(depth_value, length_value)) + geom_point() +
       geom_line(data=prudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=prldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=prmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(radius$depth)) + 
+      xlim(0, max(radius$depth_value)) + 
       ylim(0, exp(pru(max(radius$ldepth))))+
-      annotate("text", label="radius", x=0.1*max(radius$depth), 
+      annotate("text", label="radius", x=0.1*max(radius$depth_value), 
                y=0.9*exp(pru(max(radius$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # create femur metrics plot.
-    femd <- ggplot(data=femur, aes(depth, length)) + geom_point() +
+    femd <- ggplot(data=femur, aes(depth_value, length_value)) + geom_point() +
       geom_line(data=pfudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=pfldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=pfmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(femur$depth)) + 
+      xlim(0, max(femur$depth_value)) + 
       ylim(0, exp(pfu(max(femur$ldepth))))+
-      annotate("text", label="femur", x=0.1*max(femur$depth), 
+      annotate("text", label="femur", x=0.1*max(femur$depth_value), 
                y=0.9*exp(phu(max(femur$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create tibia metrics plot.
-    tibd <- ggplot(data=tibia, aes(depth, length)) + geom_point() +
+    tibd <- ggplot(data=tibia, aes(depth_value, length_value)) + geom_point() +
       geom_line(data=ptudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=ptldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=ptmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(tibia$depth)*1.01) + 
+      xlim(0, max(tibia$depth_value)*1.01) + 
       ylim(0, exp(ptu(max(tibia$ldepth)))*1.01)+
-      annotate("text", label="tibia", x=0.1*max(tibia$depth), 
+      annotate("text", label="tibia", x=0.1*max(tibia$depth_value), 
                y=0.9*exp(ptu(max(tibia$ldepth))), size=5)+
       labs(x="Depth (mm)", y="Length (mm)")
     
@@ -2952,13 +2991,13 @@ bootratios <- function(){
     maxside <- names(sort(table(etb$side),decreasing=TRUE))[1]
     etb <- etb[which(etb$side==maxside),]
     
-    bmm <- boot(etb$metric[which(etb$sex=="male" & etb$form=="modern")],
+    bmm <- boot(etb$metric_value[which(etb$sex=="male" & etb$form=="modern")],
                 statistic = function(x, index) mean(x[index]), R = 1E4)
-    bfm <- boot(etb$metric[which(etb$sex=="female" & etb$form=="modern")],
+    bfm <- boot(etb$metric_value[which(etb$sex=="female" & etb$form=="modern")],
                 statistic = function(x, index) mean(x[index]), R = 1E4)
-    bma <- boot(etb$metric[which(etb$sex=="male" & etb$form=="antiq")],
+    bma <- boot(etb$metric_value[which(etb$sex=="male" & etb$form=="antiq")],
                 statistic = function(x, index) mean(x[index]), R = 1E4)
-    bfa <- boot(etb$metric[which(etb$sex=="female" & etb$form=="antiq")],
+    bfa <- boot(etb$metric_value[which(etb$sex=="female" & etb$form=="antiq")],
                 statistic = function(x, index) mean(x[index]), R = 1E4)
     
     maleratios <- bma$t/bmm$t
@@ -2978,11 +3017,11 @@ bootratios <- function(){
 cat("\n\n**************************************************************************\n")
 cat("* Probabilistic Seasonality Models for Fetal Bison antiquus Osteometrics *\n")
 cat("**************************************************************************\n\n",
-  "- Built in R version 3.5.1 -- 'Feather Spray'\n",
-  "- Last updated on August 28, 2019.\n",
+  "- Built in R version 3.6.1'\n",
+  "- Last updated onJanuary 14, 2020.\n",
   "- Report bugs or make suggestions: rbreslawski@smu.edu\n",
   "- Required packages: ggplot2, gridExtra, reshape2, \n",
-  "                     quantreg, boot, smoother\n",
+  "                     quantreg, boot\n",
   "This script provides numerical and graphical season of death estimates\n",
   "(SODEs) for fetal antiquus specimens based on radius, humerus, tibia,\n",
   "and femur osteometrics.\n\n")
