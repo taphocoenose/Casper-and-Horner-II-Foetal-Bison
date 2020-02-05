@@ -3,8 +3,6 @@
 
 # Ryan Breslawski, rbreslawski@smu.edu
 
-
-
 # Load libraries
 library(ggplot2)
 library(patchwork)
@@ -23,21 +21,24 @@ sites <- unique(sites)
 cat(paste("\n--", length(sites), "Sites --\n\n"))
 for(i in sites) cat(paste(i, "\n"))
 
+d$Dentitions <- factor(d$Dentitions, levels=c("present", "absent", "unknown"))
+d$Foetal.remains <- factor(d$Foetal.remains, levels=c("present", "absent", "unknown"))
+
 # Data subsets and convert character strings of ages to numeric
 # values. This will convert "none" strings to NA values.
-d_unfluted <- d[which(d$Point.style=="unfluted"), ]
+d_late <- d[which(d$PaleoPeriod=="late"), ]
 d_10k <- d[which(d$Med.cal.age < 1e4), ]
 d_11k <- d[which(d$Med.cal.age < 1.1e4), ]
 
 # Data subsets for more recent excavations
 d_recent <- d[which(d$Collection.issues=="no"),]
-d_recent_unfluted <- d_recent[which(d_recent$Point.style=="unfluted"), ]
+d_recent_late <- d_recent[which(d_recent$PaleoPeriod=="late"), ]
 d_recent_10k <- d_recent[which(d_recent$Med.cal.age < 1e4), ]
 d_recent_11k <- d_recent[which(d_recent$Med.cal.age < 1.1e4), ]
 
 # Place datasets in list
-d_list <- list(d=d, d_unfluted=d_unfluted, d_10k=d_10k, d_11k=d_11k,
-               d_recent=d_recent, d_recent_unfluted=d_recent_unfluted,
+d_list <- list(d=d, d_late=d_late, d_10k=d_10k, d_11k=d_11k,
+               d_recent=d_recent, d_recent_late=d_recent_late,
                d_recent_10k=d_recent_10k, d_recent_11k=d_recent_11k)
 
 # Loop through lists and export csv contingency tables
@@ -50,7 +51,7 @@ for(i in 1:length(d_list)){
 }
 
 # Create geometry for plotting the frequencies of components
-bins <- cbind(seq(8e3, 13e3, by=500), seq(8.5e3, 13.5e3, by=500))
+bins <- cbind(seq(8e3, 12.5e3, by=500), seq(8.5e3, 13e3, by=500))
 hists <- lapply(1:nrow(bins), function(x){
   
   ymax <- length(which(d$Med.cal.age >= bins[x,1] &
@@ -75,7 +76,7 @@ hists <- do.call("rbind", hists)
 freq_plot <- ggplot(hists, aes(ymin=ymin, ymax=ymax,
                            xmin=xmin, xmax=xmax))+
   geom_rect(aes(fill=period), color="grey", alpha=0.7)+
-  scale_x_reverse(breaks=seq(14000, 8000, by=-1000))+
+  scale_x_reverse(breaks=seq(13000, 8000, by=-1000))+
   scale_y_continuous(breaks=1:15)+
   labs(x="Median cal yr BP", y="n components")+
   scale_fill_manual(values=c("LP"="blue", "EH"="red", 
@@ -88,5 +89,5 @@ freq_plot <- ggplot(hists, aes(ymin=ymin, ymax=ymax,
         legend.position="none")
 
 ggsave("Bison_PHT_components.jpeg", plot=freq_plot, 
-       device="jpeg", width=6, height=3, units="in",
+       device="jpeg", width=7, height=2.5, units="in",
        dpi=300)
