@@ -2,10 +2,10 @@
 #  Probabilistic Seasonality Models Based on Fetal Bison antiquus Osteometrics #
 ################################################################################
 #
-# Built in R Version 3.6.1 - "Action of the Toes"
+# Built in R Version 3.6.1
 # 
-# Last updated on January 14, 2020.
-# Tested on a Dell Inspiron 13 7000 with Windows 10.
+# Last updated on August 12, 2023 in R Version 4.3.1
+# Tested on a Lenovo Yoga 6 with Windows 11 Home.
 # 
 # Report issues or make suggestions: rbreslawski@smu.edu
 #
@@ -99,6 +99,7 @@ library(gridExtra)
 library(reshape2)
 library(boot)
 library(quantreg)
+library(patchwork)
 
 # FUNCTION: Smoothing function, simplified from smth function in
 # smoother package.
@@ -2909,10 +2910,8 @@ metric.function <- function(){
       geom_line(data=phudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=phldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=phmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(humerus$depth_value)) + 
-      ylim(0, exp(phu(max(humerus$ldepth))))+
-      annotate("text", label="humerus", x=0.1*max(humerus$depth_value), 
-               y=0.9*exp(phu(max(humerus$ldepth))), size=5)+
+      annotate("text", label="humerus", x=0.01*max(humerus$depth_value), 
+               y=0.95*max(phudf$y), size=5, hjust=0)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create radius metrics plot.
@@ -2920,10 +2919,8 @@ metric.function <- function(){
       geom_line(data=prudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=prldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=prmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(radius$depth_value)) + 
-      ylim(0, exp(pru(max(radius$ldepth))))+
-      annotate("text", label="radius", x=0.1*max(radius$depth_value), 
-               y=0.9*exp(pru(max(radius$ldepth))), size=5)+
+      annotate("text", label="radius", x=0.01*max(radius$depth_value), 
+               y=0.95*max(prudf$y), size=5, hjust=0)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # create femur metrics plot.
@@ -2931,10 +2928,8 @@ metric.function <- function(){
       geom_line(data=pfudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=pfldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=pfmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(femur$depth_value)) + 
-      ylim(0, exp(pfu(max(femur$ldepth))))+
-      annotate("text", label="femur", x=0.1*max(femur$depth_value), 
-               y=0.9*exp(phu(max(femur$ldepth))), size=5)+
+      annotate("text", label="femur", x=0.01*max(femur$depth_value), 
+               y=0.95*max(pfudf$y), size=5, hjust=0)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Create tibia metrics plot.
@@ -2942,14 +2937,16 @@ metric.function <- function(){
       geom_line(data=ptudf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=ptldf, aes(x=x, y=y), alpha=0.2, size=1) +
       geom_line(data=ptmdf, aes(x=x, y=y), alpha=0.2, size=1, linetype="dashed") +
-      xlim(0, max(tibia$depth_value)*1.01) + 
-      ylim(0, exp(ptu(max(tibia$ldepth)))*1.01)+
-      annotate("text", label="tibia", x=0.1*max(tibia$depth_value), 
-               y=0.9*exp(ptu(max(tibia$ldepth))), size=5)+
+      annotate("text", label="tibia", x=0.01*max(tibia$depth_value), 
+               y=0.95*max(ptudf$y), size=5, hjust=0)+
       labs(x="Depth (mm)", y="Length (mm)")
     
     # Plot the element relationships in a 2x2 figure.
     grid.arrange(humd, radd, femd, tibd, ncol=2)
+    
+    plotout <- humd + radd + femd + tibd + plot_layout(ncol=2)
+    ggsave("quantreg.jpeg", plotout, device="jpeg", unit="cm",
+           height=15, width=18, dpi=600)
     
     # Present text describing the plots
     cat("Solid grey lines show the 2.5% and 97.5% quantiles for the ",
